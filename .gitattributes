@@ -1,0 +1,65 @@
+# Normalize line endings for text; let Git pick native checkout when unspecified
+* text=auto eol=lf
+
+# Unreal C++ / text sources — explicit EOL
+*.cpp text eol=lf
+*.c text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.inl text eol=lf
+*.cs text eol=lf
+*.ini text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.uplugin text eol=lf
+*.uproject text eol=lf
+*.upluginmanifest text eol=lf
+*.props text eol=lf
+*.csproj text eol=lf
+*.vcxproj* text eol=lf
+*.sln text eol=crlf
+
+# Unreal package data — Git LFS (2MB+ uassets; keeps repo clone small)
+# .uproject / .uplugin stay plain text above, not LFS
+*.uasset filter=lfs diff=lfs merge=lfs -text
+*.umap filter=lfs diff=lfs merge=lfs -text
+*.uexp filter=lfs diff=lfs merge=lfs -text
+*.ubulk filter=lfs diff=lfs merge=lfs -text
+
+# Common binary / design files in pipelines
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.tga binary
+*.bmp binary
+*.dds binary
+*.exr binary
+*.hdr binary
+*.psd binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.fbx binary
+*.obj binary
+*.glb binary
+*.gltf binary
+*.blend binary
+*.zip binary
+*.7z binary
+*.lib binary
+*.dll binary
+*.exe binary
+*.pdb binary
+*.ilk binary
+*.exp binary
+
+# Optional: very large source art (uncomment if needed)
+# Content/**/*.png filter=lfs diff=lfs merge=lfs -text
+# Content/**/*.exr filter=lfs diff=lfs merge=lfs -text
+# Content/**/*.fbx filter=lfs diff=lfs merge=lfs -text
