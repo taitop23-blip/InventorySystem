@@ -20,6 +20,7 @@
 #include "ItemWidget.h"
 #include "PickupPromptWidget.h"
 #include "InventoryWidget.h"
+#include "WeaponBase.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -56,6 +57,8 @@ AIntentorySystemCppCharacter::AIntentorySystemCppCharacter()
 	// EndOverlap: 범위에서 벗어나면 OverlappingItem 초기화
 	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(
 		this, &AIntentorySystemCppCharacter::OnEndOverlap);
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 }
 
 void AIntentorySystemCppCharacter::BeginPlay()
@@ -132,6 +135,11 @@ void AIntentorySystemCppCharacter::SetupPlayerInputComponent(UInputComponent* Pl
 
 	// G: 칭호 획득 (데모 순서: 무기 전문가 → 근접 달인 → 폭발물 면허)
 	PlayerInputComponent->BindKey(EKeys::G, IE_Pressed, this, &AIntentorySystemCppCharacter::GrantNextDemoTitle);
+	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &AIntentorySystemCppCharacter::FireCurrentWeapon);
+	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &AIntentorySystemCppCharacter::EquipWeaponSlot1);
+	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &AIntentorySystemCppCharacter::EquipWeaponSlot2);
+	PlayerInputComponent->BindKey(EKeys::NumPadOne, IE_Pressed, this, &AIntentorySystemCppCharacter::EquipWeaponSlot1);
+	PlayerInputComponent->BindKey(EKeys::NumPadTwo, IE_Pressed, this, &AIntentorySystemCppCharacter::EquipWeaponSlot2);
 }
 
 void AIntentorySystemCppCharacter::Move(const FInputActionValue& Value)
@@ -220,7 +228,22 @@ void AIntentorySystemCppCharacter::PickupItem()
 		const FString PickedName = OverlappingItem->ItemName;
 		UE_LOG(LogIntentoryAssignment, Log, TEXT("Pickup OK: '%s' stored in TArray bag grid."), *PickedName);
 
-		OverlappingItem->Destroy();
+		if (AWeaponBase* PickedWeapon = Cast<AWeaponBase>(OverlappingItem))
+		{
+			if (!OwnedWeapons.Contains(PickedWeapon))
+			{
+				OwnedWeapons.Add(PickedWeapon);
+			}
+			PickedWeapon->SetActorHiddenInGame(true);
+			PickedWeapon->SetActorEnableCollision(false);
+			UE_LOG(LogIntentoryAssignment, Log, TEXT("Stored weapon slot %d: '%s'. Press 1/2 to equip by pickup order."),
+				OwnedWeapons.IndexOfByKey(PickedWeapon) + 1,
+				*PickedName);
+		}
+		else
+		{
+			OverlappingItem->Destroy();
+		}
 		OverlappingItem = nullptr;
 
 		// 줍기 성공 시 프롬프트 숨기기
@@ -233,6 +256,115 @@ void AIntentorySystemCppCharacter::PickupItem()
 	{
 		UE_LOG(LogIntentoryAssignment, Warning, TEXT("Pickup failed: no room for '%s'."), *OverlappingItem->ItemName);
 	}
+}
+
+void AIntentorySystemCppCharacter::FireCurrentWeapon()
+{
+	if (!CurrentWeapon || !IsValid(CurrentWeapon))
+	{
+		UE_LOG(LogIntentoryAssignment, Warning, TEXT("No current weapon. Pick up AK-47 or Shotgun first."));
+		return;
+	}
+
+	CurrentWeapon->Fire(this);
+}
+
+void AIntentorySystemCppCharacter::EquipWeaponSlot1()
+{
+	EquipWeaponBySlot(0);
+}
+
+void AIntentorySystemCppCharacter::EquipWeaponSlot2()
+{
+	EquipWeaponBySlot(1);
+}
+
+void AIntentorySystemCppCharacter::EquipWeaponBySlot(int32 SlotIndex)
+{
+	CleanupOwnedWeapons();
+
+	if (!OwnedWeapons.IsValidIndex(SlotIndex))
+	{
+		UE_LOG(LogIntentoryAssignment, Warning, TEXT("Weapon slot %d is empty."), SlotIndex + 1);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
+				FString::Printf(TEXT("Weapon slot %d is empty."), SlotIndex + 1));
+		}
+		return;
+	}
+
+	AWeaponBase* WeaponToEquip = OwnedWeapons[SlotIndex];
+	if (!WeaponToEquip || !IsValid(WeaponToEquip))
+	{
+		return;
+	}
+
+	AWeaponBase* PreviouslyEquippedWeapon = CurrentWeapon;
+
+	if (IsWeaponInInventory(WeaponToEquip))
+	{
+		InventoryComponent->RemoveItem(WeaponToEquip);
+	}
+
+	if (PreviouslyEquippedWeapon && PreviouslyEquippedWeapon != WeaponToEquip && IsValid(PreviouslyEquippedWeapon) && !IsWeaponInInventory(PreviouslyEquippedWeapon))
+	{
+		if (!InventoryComponent->TryAddItem(PreviouslyEquippedWeapon))
+		{
+			UE_LOG(LogIntentoryAssignment, Warning, TEXT("Could not return '%s' to inventory while switching weapons."),
+				*PreviouslyEquippedWeapon->ItemName);
+		}
+	}
+
+	CurrentWeapon = WeaponToEquip;
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->SetActorHiddenInGame(true);
+		CurrentWeapon->SetActorEnableCollision(false);
+		UE_LOG(LogIntentoryAssignment, Log, TEXT("Equipped slot %d weapon: '%s'."), SlotIndex + 1, *CurrentWeapon->ItemName);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Green,
+				FString::Printf(TEXT("Equipped %d: %s"), SlotIndex + 1, *CurrentWeapon->ItemName));
+		}
+	}
+
+	RefreshWeaponInventoryUI();
+}
+
+bool AIntentorySystemCppCharacter::IsWeaponInInventory(AWeaponBase* Weapon) const
+{
+	if (!Weapon || !InventoryComponent)
+	{
+		return false;
+	}
+
+	return InventoryComponent->Items.Contains(Weapon);
+}
+
+void AIntentorySystemCppCharacter::CleanupOwnedWeapons()
+{
+	for (int32 Index = OwnedWeapons.Num() - 1; Index >= 0; --Index)
+	{
+		if (!IsValid(OwnedWeapons[Index]))
+		{
+			if (CurrentWeapon == OwnedWeapons[Index])
+			{
+				CurrentWeapon = nullptr;
+			}
+			OwnedWeapons.RemoveAt(Index);
+		}
+	}
+}
+
+void AIntentorySystemCppCharacter::RefreshWeaponInventoryUI()
+{
+	if (InventoryComponent && InventoryComponent->InventoryGridWidgetReference)
+	{
+		InventoryComponent->InventoryGridWidgetReference->Refresh();
+	}
+
+	NotifyInventoryVisualsChanged();
 }
 
 bool AIntentorySystemCppCharacter::HasEarnedTitle(const FString& Title) const

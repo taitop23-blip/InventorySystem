@@ -47,6 +47,15 @@ UMaterialInstance* AItemBase::GetIcon()
 	return Icon;
 }
 
+UTexture2D* AItemBase::GetIconTexture()
+{
+	if (IsRotated && RotatedIconTexture)
+	{
+		return RotatedIconTexture;
+	}
+	return IconTexture;
+}
+
 // [파트7] 아이템 회전: Dimensions X/Y 교환 + 상태 토글
 void AItemBase::Rotate()
 {

@@ -10,12 +10,22 @@ AIB_AK47::AIB_AK47()
 	ItemDescription = TEXT("Automatic rifle. Requires the Weapons Expert title to take out of the bag.");
 	RequiredTitleToUse = TEXT("\uBB34\uAE30 \uC804\uBB38\uAC00");
 
-	// ±âº» Å©±â ¼³Á¤ (°¡·Î 2Ä­ x ¼¼·Î 4Ä­)
+	Damage = 18.f;
+	Range = 12000.f;
+	FireRate = 0.12f;
+	PelletCount = 1;
+	SpreadAngle = 1.2f;
+	RecoilPitch = 0.7f;
+	RecoilYaw = 0.18f;
+	RecoilRecoverySpeed = 10.f;
+	TraceChannel = ECC_Pawn;
+
+	// ï¿½âº» Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ 2Ä­ x ï¿½ï¿½ï¿½ï¿½ 4Ä­)
 	Dimensions = FIntPoint(2, 4);
 
-	// ¾ÆÀÌÄÜ ¸ÓÆ¼¸®¾ó °æ·Î ÁöÁ¤
-	// TODO: °æ·Î¸¦ ½ÇÁ¦ ÇÁ·ÎÁ§Æ®ÀÇ ¸ÓÆ¼¸®¾ó °æ·Î·Î ±³Ã¼ÇÏ¼¼¿ä
-	// ¿¹: TEXT("/Game/Icons/M_AK47_Icon")
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// TODO: ï¿½ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Î·ï¿½ ï¿½ï¿½Ã¼ï¿½Ï¼ï¿½ï¿½ï¿½
+	// ï¿½ï¿½: TEXT("/Game/Icons/M_AK47_Icon")
 	static ConstructorHelpers::FObjectFinder<UMaterialInstance> IconFinder(
 		TEXT("/Game/InventoryResources/MaterialIcons/MI_AK47"));
 	if (IconFinder.Succeeded())

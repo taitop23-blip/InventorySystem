@@ -10,11 +10,11 @@ AIB_Grenade::AIB_Grenade()
 	ItemDescription = TEXT("Throwable explosive. Requires the Explosives Permit title.");
 	RequiredTitleToUse = TEXT("\uD3ED\uBC1C\uBB3C \uBA74\uD5C8");
 
-	// ±âº» Å©±â ¼³Á¤ (°¡·Î 1Ä­ x ¼¼·Î 1Ä­)
+	// ï¿½âº» Å©ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ 1Ä­ x ï¿½ï¿½ï¿½ï¿½ 1Ä­)
 	Dimensions = FIntPoint(1, 1);
 
-	// ¾ÆÀÌÄÜ ¸ÓÆ¼¸®¾ó °æ·Î ÁöÁ¤
-	// TODO: °æ·Î¸¦ ½ÇÁ¦ ÇÁ·ÎÁ§Æ®ÀÇ ¸ÓÆ¼¸®¾ó °æ·Î·Î ±³Ã¼ÇÏ¼¼¿ä
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+	// TODO: ï¿½ï¿½Î¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Î·ï¿½ ï¿½ï¿½Ã¼ï¿½Ï¼ï¿½ï¿½ï¿½
 	static ConstructorHelpers::FObjectFinder<UMaterialInstance> IconFinder(
 		TEXT("/Game/InventoryResources/MaterialIcons/MI_Grenade"));
 	if (IconFinder.Succeeded())

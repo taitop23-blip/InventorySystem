@@ -43,6 +43,10 @@ void UItemWidget::Refresh(AItemBase* ItemToDisplay)
 	{
 		ItemImage->SetBrushFromMaterial(ItemToDisplay->GetIcon());
 	}
+	else if (ItemToDisplay->GetIconTexture())
+	{
+		ItemImage->SetBrushFromTexture(ItemToDisplay->GetIconTexture());
+	}
 
 	float TileSize = CharacterReference->InventoryComponent->TileSize;
 	Size = FVector2D(

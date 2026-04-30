@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ItemBase.h"
+#include "WeaponBase.h"
 #include "IB_AK47.generated.h"
 
 UCLASS()
-class INTENTORYSYSTEMCPP_API AIB_AK47 : public AItemBase
+class INTENTORYSYSTEMCPP_API AIB_AK47 : public AWeaponBase
 {
 	GENERATED_BODY()
 

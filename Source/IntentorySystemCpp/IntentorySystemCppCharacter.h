@@ -15,6 +15,7 @@ class UInputAction;
 struct FInputActionValue;
 class UInventoryComponent;
 class AItemBase;
+class AWeaponBase;
 class UItemWidget;
 class UPickupPromptWidget;
 
@@ -90,6 +91,12 @@ public:
 
 	UItemWidget* DraggingItemWidget = nullptr;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	AWeaponBase* CurrentWeapon = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	TArray<AWeaponBase*> OwnedWeapons;
+
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -113,6 +120,15 @@ protected:
 	void RotateDraggingItem();
 
 	void PickupItem();
+
+	void FireCurrentWeapon();
+
+	void EquipWeaponSlot1();
+	void EquipWeaponSlot2();
+	void EquipWeaponBySlot(int32 SlotIndex);
+	bool IsWeaponInInventory(AWeaponBase* Weapon) const;
+	void CleanupOwnedWeapons();
+	void RefreshWeaponInventoryUI();
 
 	void GrantNextDemoTitle();
 

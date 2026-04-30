@@ -9,6 +9,7 @@
 class USphereComponent;
 class UStaticMeshComponent;
 class UMaterialInstance;
+class UTexture2D;
 
 UCLASS()
 class INTENTORYSYSTEMCPP_API AItemBase : public AActor
@@ -30,7 +31,9 @@ public:
 
 	UMaterialInstance* GetIcon();
 
-	// [ÆÄÆ®7] È¸Àü ±â´É
+	UTexture2D* GetIconTexture();
+
+	// [ï¿½ï¿½Æ®7] È¸ï¿½ï¿½ ï¿½ï¿½ï¿½
 	bool IsRotated = false;
 	void Rotate();
 
@@ -50,9 +53,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Item Info | Icon")
 	UMaterialInstance* Icon;
 
-	// [ÆÄÆ®7] È¸Àü ½Ã »ç¿ëÇÒ ¾ÆÀÌÄÜ
+	// [ï¿½ï¿½Æ®7] È¸ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	UPROPERTY(EditAnywhere, Category = "Item Info | Icon")
 	UMaterialInstance* RotatedIcon;
+
+	UPROPERTY(EditAnywhere, Category = "Item Info | Icon")
+	UTexture2D* IconTexture;
+
+	UPROPERTY(EditAnywhere, Category = "Item Info | Icon")
+	UTexture2D* RotatedIconTexture;
 
 protected:
 	virtual void BeginPlay() override;
