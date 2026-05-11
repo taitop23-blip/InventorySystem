@@ -23,7 +23,6 @@
 #include "WeaponBase.h"
 #include "MyActorComponent.h"
 #include "HealthBarWidget.h"
-#include "AimCrosshairWidget.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -69,6 +68,12 @@ void AIntentorySystemCppCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (CameraBoom)
+	{
+		DefaultCameraArmLength = CameraBoom->TargetArmLength;
+		DefaultCameraSocketOffset = CameraBoom->SocketOffset;
+	}
+
 	GetPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 	if (GetPlayerController)
 	{
@@ -106,18 +111,6 @@ void AIntentorySystemCppCharacter::BeginPlay()
 	{
 		HealthComponent->OnHealthDead.AddDynamic(this, &AIntentorySystemCppCharacter::HandleCharacterDead);
 		HealthComponent->OnHealthDamaged.AddDynamic(this, &AIntentorySystemCppCharacter::HandleHealthDamaged);
-	}
-
-	if (GetPlayerController)
-	{
-		AimCrosshairWidget = CreateWidget<UAimCrosshairWidget>(GetPlayerController, UAimCrosshairWidget::StaticClass());
-		if (AimCrosshairWidget)
-		{
-			AimCrosshairWidget->AddToViewport(20);
-			AimCrosshairWidget->SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
-			AimCrosshairWidget->SetDesiredSizeInViewport(FVector2D(240.f, 240.f));
-			AimCrosshairWidget->SetVisibility(ESlateVisibility::Collapsed);
-		}
 	}
 
 	UE_LOG(LogIntentoryAssignment, Log, TEXT("PIE/Game: Character ready (%s). G=earn title, F=pickup."), *GetNameSafe(this));
@@ -584,9 +577,10 @@ void AIntentorySystemCppCharacter::StartAiming()
 	}
 	bUseControllerRotationYaw = true;
 
-	if (AimCrosshairWidget)
+	if (CameraBoom)
 	{
-		AimCrosshairWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+		CameraBoom->TargetArmLength = AimedArmLength;
+		CameraBoom->SocketOffset = AimedSocketOffset;
 	}
 }
 
@@ -605,8 +599,9 @@ void AIntentorySystemCppCharacter::StopAiming()
 	}
 	bUseControllerRotationYaw = false;
 
-	if (AimCrosshairWidget)
+	if (CameraBoom)
 	{
-		AimCrosshairWidget->SetVisibility(ESlateVisibility::Collapsed);
+		CameraBoom->TargetArmLength = DefaultCameraArmLength;
+		CameraBoom->SocketOffset = DefaultCameraSocketOffset;
 	}
 }

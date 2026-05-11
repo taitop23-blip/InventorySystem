@@ -20,7 +20,6 @@ class UItemWidget;
 class UPickupPromptWidget;
 class UMyActorComponent;
 class UHealthBarWidget;
-class UAimCrosshairWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -103,6 +102,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	TArray<AWeaponBase*> OwnedWeapons;
 
+	/** 우클릭 조준 중 — HUD 크로스헤어 표시용 */
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	bool IsAiming() const { return bIsAiming; }
+
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -169,12 +172,19 @@ protected:
 	UPROPERTY()
 	UHealthBarWidget* HealthBarWidget;
 
-	/** Hold right mouse to aim: crosshair + character yaw follows look direction. */
-	UPROPERTY()
-	UAimCrosshairWidget* AimCrosshairWidget;
-
 	bool bIsAiming = false;
 
 	void StartAiming();
 	void StopAiming();
+
+	/** Cached from CameraBoom at BeginPlay (designer defaults). */
+	float DefaultCameraArmLength = 400.f;
+	FVector DefaultCameraSocketOffset = FVector::ZeroVector;
+
+	/** 조준 시 스프링암: 짧게(줌) + 오른쪽·위 사선 오프셋(어깨 조준 느낌). */
+	UPROPERTY(EditAnywhere, Category = "Camera|Aim", meta = (ClampMin = "50.0"))
+	float AimedArmLength = 268.f;
+
+	UPROPERTY(EditAnywhere, Category = "Camera|Aim")
+	FVector AimedSocketOffset = FVector(22.f, 78.f, 36.f);
 };
