@@ -18,6 +18,9 @@ class AItemBase;
 class AWeaponBase;
 class UItemWidget;
 class UPickupPromptWidget;
+class UMyActorComponent;
+class UHealthBarWidget;
+class UAimCrosshairWidget;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -64,6 +67,9 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	UInventoryComponent* InventoryComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Health")
+	UMyActorComponent* HealthComponent;
 
 	/** Assignment: earned titles (TSet). Required to take some items out of the bag to the world. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|Titles")
@@ -150,4 +156,25 @@ protected:
 		class AActor* OtherActor,
 		class UPrimitiveComponent* OtherComp,
 		int32 OtherBodyIndex);
+
+	UFUNCTION()
+	void HandleCharacterDead(AController* InstigatorController);
+
+	UFUNCTION()
+	void HandleHealthDamaged(float NewHealth, float MaxHealth, float HealthChange);
+
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UHealthBarWidget> HealthBarWidgetClass;
+
+	UPROPERTY()
+	UHealthBarWidget* HealthBarWidget;
+
+	/** Hold right mouse to aim: crosshair + character yaw follows look direction. */
+	UPROPERTY()
+	UAimCrosshairWidget* AimCrosshairWidget;
+
+	bool bIsAiming = false;
+
+	void StartAiming();
+	void StopAiming();
 };

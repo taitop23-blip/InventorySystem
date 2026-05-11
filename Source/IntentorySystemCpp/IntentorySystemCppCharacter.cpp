@@ -21,6 +21,9 @@
 #include "PickupPromptWidget.h"
 #include "InventoryWidget.h"
 #include "WeaponBase.h"
+#include "MyActorComponent.h"
+#include "HealthBarWidget.h"
+#include "AimCrosshairWidget.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -49,6 +52,7 @@ AIntentorySystemCppCharacter::AIntentorySystemCppCharacter()
 	FollowCamera->bUsePawnControlRotation = false;
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	HealthComponent = CreateDefaultSubobject<UMyActorComponent>(TEXT("HealthComponent"));
 
 	// BeginOverlap: 범위 안에 들어온 아이템을 OverlappingItem으로 기억
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(
@@ -87,6 +91,34 @@ void AIntentorySystemCppCharacter::BeginPlay()
 	}
 
 	InventoryComponent->Items.SetNum(InventoryComponent->Columns * InventoryComponent->Rows);
+
+	if (HealthBarWidgetClass && GetPlayerController)
+	{
+		HealthBarWidget = CreateWidget<UHealthBarWidget>(GetWorld(), HealthBarWidgetClass);
+		if (HealthBarWidget)
+		{
+			HealthBarWidget->SetOwningPlayer(GetPlayerController);
+			HealthBarWidget->AddToViewport();
+		}
+	}
+
+	if (HealthComponent)
+	{
+		HealthComponent->OnHealthDead.AddDynamic(this, &AIntentorySystemCppCharacter::HandleCharacterDead);
+		HealthComponent->OnHealthDamaged.AddDynamic(this, &AIntentorySystemCppCharacter::HandleHealthDamaged);
+	}
+
+	if (GetPlayerController)
+	{
+		AimCrosshairWidget = CreateWidget<UAimCrosshairWidget>(GetPlayerController, UAimCrosshairWidget::StaticClass());
+		if (AimCrosshairWidget)
+		{
+			AimCrosshairWidget->AddToViewport(20);
+			AimCrosshairWidget->SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
+			AimCrosshairWidget->SetDesiredSizeInViewport(FVector2D(240.f, 240.f));
+			AimCrosshairWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
 
 	UE_LOG(LogIntentoryAssignment, Log, TEXT("PIE/Game: Character ready (%s). G=earn title, F=pickup."), *GetNameSafe(this));
 }
@@ -140,6 +172,9 @@ void AIntentorySystemCppCharacter::SetupPlayerInputComponent(UInputComponent* Pl
 	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &AIntentorySystemCppCharacter::EquipWeaponSlot2);
 	PlayerInputComponent->BindKey(EKeys::NumPadOne, IE_Pressed, this, &AIntentorySystemCppCharacter::EquipWeaponSlot1);
 	PlayerInputComponent->BindKey(EKeys::NumPadTwo, IE_Pressed, this, &AIntentorySystemCppCharacter::EquipWeaponSlot2);
+
+	PlayerInputComponent->BindKey(EKeys::RightMouseButton, IE_Pressed, this, &AIntentorySystemCppCharacter::StartAiming);
+	PlayerInputComponent->BindKey(EKeys::RightMouseButton, IE_Released, this, &AIntentorySystemCppCharacter::StopAiming);
 }
 
 void AIntentorySystemCppCharacter::Move(const FInputActionValue& Value)
@@ -172,6 +207,7 @@ void AIntentorySystemCppCharacter::ToggleInventory()
 
 	if (InventoryWidget->GetVisibility() == ESlateVisibility::Collapsed)
 	{
+		StopAiming();
 		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
 		GetPlayerController->SetInputMode(FInputModeGameAndUI());
 		GetPlayerController->SetShowMouseCursor(true);
@@ -475,5 +511,102 @@ void AIntentorySystemCppCharacter::OnEndOverlap(
 		// 픽업 프롬프트 숨기기
 		if (PickupPromptWidget)
 			PickupPromptWidget->HidePrompt();
+	}
+}
+
+void AIntentorySystemCppCharacter::HandleCharacterDead(AController* InstigatorController)
+{
+	StopAiming();
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+		MoveComp->DisableMovement();
+	}
+
+	if (USkeletalMeshComponent* SK = GetMesh())
+	{
+		SK->SetCollisionProfileName(TEXT("Ragdoll"));
+		SK->SetSimulatePhysics(true);
+	}
+
+	if (GetCapsuleComponent())
+	{
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		DisableInput(PC);
+	}
+
+	if (InventoryComponent)
+	{
+		for (AItemBase*& SlotItem : InventoryComponent->Items)
+		{
+			SlotItem = nullptr;
+		}
+		InventoryComponent->AddedItem = true;
+	}
+
+	OwnedWeapons.Empty();
+	CurrentWeapon = nullptr;
+	NotifyInventoryVisualsChanged();
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, TEXT("You Died"));
+	}
+
+	UE_LOG(LogIntentoryAssignment, Log, TEXT("Character dead: ragdoll + input disabled."));
+}
+
+void AIntentorySystemCppCharacter::HandleHealthDamaged(float NewHealth, float MaxHealth, float HealthChange)
+{
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->UpdateHP(NewHealth, MaxHealth, HealthChange);
+	}
+}
+
+void AIntentorySystemCppCharacter::StartAiming()
+{
+	if (bIsAiming || !Controller)
+	{
+		return;
+	}
+
+	bIsAiming = true;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->bOrientRotationToMovement = false;
+	}
+	bUseControllerRotationYaw = true;
+
+	if (AimCrosshairWidget)
+	{
+		AimCrosshairWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+}
+
+void AIntentorySystemCppCharacter::StopAiming()
+{
+	if (!bIsAiming)
+	{
+		return;
+	}
+
+	bIsAiming = false;
+
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->bOrientRotationToMovement = true;
+	}
+	bUseControllerRotationYaw = false;
+
+	if (AimCrosshairWidget)
+	{
+		AimCrosshairWidget->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
